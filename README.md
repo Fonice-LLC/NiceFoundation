@@ -2,6 +2,17 @@
 
 A comprehensive beauty e-commerce platform with integrated salon booking system, built with Next.js 14, TypeScript, MongoDB, and Tailwind CSS.
 
+---
+
+## 📚 Documentation
+
+- **⚡ [Quick Start Guide](QUICKSTART.md)** - Get running in 5 minutes
+- **📖 [Complete Tutorial](TUTORIAL.md)** - Step-by-step usage instructions
+- **📐 [Architecture Overview](ARCHITECTURE.md)** - System design and data flow
+- **📝 [Implementation Summary](IMPLEMENTATION_SUMMARY.md)** - Technical details
+
+---
+
 ## 🌟 Features
 
 ### E-commerce Features
