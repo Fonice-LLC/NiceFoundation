@@ -1,27 +1,64 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useState } from 'react';
-import { ShoppingCartIcon, UserIcon, MagnifyingGlassIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import Link from "next/link";
+import { useState, useRef, useEffect } from "react";
+import {
+  ShoppingCartIcon,
+  UserIcon,
+  MagnifyingGlassIcon,
+  Bars3Icon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
 
 const categories = [
-  { name: 'Makeup', href: '/products?category=makeup' },
-  { name: 'Skincare', href: '/products?category=skincare' },
-  { name: 'Haircare', href: '/products?category=haircare' },
-  { name: 'Fragrance', href: '/products?category=fragrance' },
-  { name: 'Tools', href: '/products?category=tools' },
-  { name: 'Bath & Body', href: '/products?category=bath-body' },
-  { name: 'Salon Services', href: '/salon' },
+  { name: "Makeup", href: "/products?category=makeup" },
+  { name: "Skincare", href: "/products?category=skincare" },
+  { name: "Haircare", href: "/products?category=haircare" },
+  { name: "Fragrance", href: "/products?category=fragrance" },
+  { name: "Tools", href: "/products?category=tools" },
+  { name: "Bath & Body", href: "/products?category=bath-body" },
+  { name: "Salon Services", href: "/salon" },
 ];
 
 export default function Header() {
+  const { user, isAuthenticated } = useAuth();
+  const { getCartTotal } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setProfileDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((part) => part.charAt(0).toUpperCase())
+      .join("")
+      .slice(0, 2);
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      window.location.href = `/products?search=${encodeURIComponent(searchQuery)}`;
+      window.location.href = `/products?search=${encodeURIComponent(
+        searchQuery
+      )}`;
     }
   };
 
@@ -63,15 +100,62 @@ export default function Header() {
 
           {/* Right icons */}
           <div className="flex items-center space-x-4">
-            <Link href="/account" className="text-gray-700 hover:text-pink-600">
-              <UserIcon className="h-6 w-6" />
-            </Link>
-            <Link href="/cart" className="text-gray-700 hover:text-pink-600 relative">
-              <ShoppingCartIcon className="h-6 w-6" />
-              <span className="absolute -top-2 -right-2 bg-pink-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                0
-              </span>
-            </Link>
+            {isAuthenticated && user ? (
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  className="w-8 h-8 bg-white text-pink-600 border border-pink-600 rounded-full flex items-center justify-center text-sm font-bold hover:bg-pink-600 hover:text-white transition-colors"
+                >
+                  {getInitials(user.name)}
+                </button>
+
+                {/* Dropdown Menu */}
+                {profileDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50 border border-gray-200">
+                    <Link
+                      href="/profile"
+                      className="block px-4 py-2 text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition-colors"
+                      onClick={() => setProfileDropdownOpen(false)}
+                    >
+                      My Profile
+                    </Link>
+                    {user.role === "admin" && (
+                      <Link
+                        href="/admin"
+                        className="block px-4 py-2 text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition-colors"
+                        onClick={() => setProfileDropdownOpen(false)}
+                      >
+                        Admin Dashboard
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link href="/login" className="text-gray-700 hover:text-pink-600">
+                <UserIcon className="h-6 w-6" />
+              </Link>
+            )}
+            {isAuthenticated ? (
+              <Link
+                href="/cart"
+                className="text-gray-700 hover:text-pink-600 relative"
+              >
+                <ShoppingCartIcon className="h-6 w-6" />
+                {getCartTotal() > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-pink-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {getCartTotal()}
+                  </span>
+                )}
+              </Link>
+            ) : (
+              <Link
+                href="/login?returnUrl=/cart"
+                className="text-gray-700 hover:text-pink-600 relative"
+              >
+                <ShoppingCartIcon className="h-6 w-6" />
+              </Link>
+            )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden text-gray-700"

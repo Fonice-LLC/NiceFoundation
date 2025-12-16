@@ -2,7 +2,9 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext';
 
 interface Product {
   _id: string;
@@ -21,7 +23,11 @@ interface Product {
 }
 
 function ProductsList() {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { user: authUser } = useAuth();
+  const { addToCart, removeFromCart, isInCart } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
@@ -73,6 +79,27 @@ function ProductsList() {
       style: 'currency',
       currency: 'USD',
     }).format(price);
+  };
+
+  const handleAddToCart = (e: React.MouseEvent, productId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!authUser) {
+      const returnUrl = `${pathname}?${searchParams.toString()}`;
+      localStorage.setItem('pendingCartProduct', productId);
+      router.push(`/login?returnUrl=${encodeURIComponent(returnUrl)}`);
+      return;
+    }
+
+    addToCart(productId);
+  };
+
+  const handleRemoveFromCart = (e: React.MouseEvent, productId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    removeFromCart(productId);
   };
 
   return (
@@ -158,74 +185,112 @@ function ProductsList() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map((product) => (
-                <Link
+                <div
                   key={product._id}
-                  href={`/products/${product._id}`}
-                  className="bg-white rounded-lg shadow hover:shadow-xl transition-shadow overflow-hidden group"
+                  className="bg-white rounded-lg shadow hover:shadow-xl transition-shadow overflow-hidden group relative"
                 >
-                  <div className="aspect-square bg-gray-100 relative overflow-hidden">
-                    {product.images && product.images.length > 0 ? (
-                      <img
-                        src={product.images[0]}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">
-                        No Image
-                      </div>
-                    )}
-                    {product.salePrice && (
-                      <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-md text-sm font-semibold">
-                        Sale
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <p className="text-sm text-gray-500 mb-1">{product.brand}</p>
-                    <h3 className="font-semibold mb-2 line-clamp-2">{product.name}</h3>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="flex items-center">
-                        {[...Array(5)].map((_, i) => (
-                          <svg
-                            key={i}
-                            className={`w-4 h-4 ${
-                              i < Math.floor(product.ratings.average)
-                                ? 'text-yellow-400'
-                                : 'text-gray-300'
-                            }`}
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                        ))}
-                      </div>
-                      <span className="text-sm text-gray-500">
-                        ({product.ratings.count})
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {product.salePrice ? (
-                        <>
-                          <span className="text-lg font-bold text-pink-600">
-                            {formatPrice(product.salePrice)}
-                          </span>
-                          <span className="text-sm text-gray-500 line-through">
-                            {formatPrice(product.price)}
-                          </span>
-                        </>
+                  <Link
+                    href={`/products/${product._id}`}
+                    className="block"
+                  >
+                    <div className="aspect-square bg-gray-100 relative overflow-hidden">
+                      {product.images && product.images.length > 0 ? (
+                        <img
+                          src={product.images[0]}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        />
                       ) : (
-                        <span className="text-lg font-bold">
-                          {formatPrice(product.price)}
-                        </span>
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          No Image
+                        </div>
+                      )}
+                      {product.salePrice && (
+                        <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-md text-sm font-semibold">
+                          Sale
+                        </div>
                       )}
                     </div>
-                    {!product.inStock && (
-                      <p className="text-red-500 text-sm mt-2">Out of Stock</p>
+                    <div className="p-4">
+                      <p className="text-sm text-gray-500 mb-1">{product.brand}</p>
+                      <h3 className="font-semibold mb-2 line-clamp-2">{product.name}</h3>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center">
+                          {[...Array(5)].map((_, i) => (
+                            <svg
+                              key={i}
+                              className={`w-4 h-4 ${
+                                i < Math.floor(product.ratings.average)
+                                  ? 'text-yellow-400'
+                                  : 'text-gray-300'
+                              }`}
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                          ))}
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          ({product.ratings.count})
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {product.salePrice ? (
+                          <>
+                            <span className="text-lg font-bold text-pink-600">
+                              {formatPrice(product.salePrice)}
+                            </span>
+                            <span className="text-sm text-gray-500 line-through">
+                              {formatPrice(product.price)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-lg font-bold">
+                            {formatPrice(product.price)}
+                          </span>
+                        )}
+                      </div>
+                      {!product.inStock && (
+                        <p className="text-red-500 text-sm mt-2">Out of Stock</p>
+                      )}
+                    </div>
+                  </Link>
+                  <button
+                    onClick={(e) =>
+                      isInCart(product._id)
+                        ? handleRemoveFromCart(e, product._id)
+                        : handleAddToCart(e, product._id)
+                    }
+                    className="absolute bottom-4 right-4 bg-pink-600 text-white rounded-full p-2 hover:bg-pink-700 transition-colors shadow-md"
+                  >
+                    {isInCart(product._id) ? (
+                      <svg
+                        className="w-6 h-6"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-6 h-6"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
                     )}
-                  </div>
-                </Link>
+                  </button>
+                </div>
               ))}
             </div>
           )}

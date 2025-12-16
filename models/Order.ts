@@ -1,15 +1,15 @@
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface IOrder extends Document {
   user: mongoose.Types.ObjectId;
   items: Array<{
     product: mongoose.Types.ObjectId;
-    name: string;
+    name?: string;
     price: number;
     quantity: number;
-    image: string;
+    image?: string;
   }>;
-  shippingAddress: {
+  shippingAddress?: {
     street: string;
     city: string;
     state: string;
@@ -17,21 +17,24 @@ export interface IOrder extends Document {
     country: string;
   };
   paymentMethod: string;
+  paymentStatus: "pending" | "paid" | "failed";
   paymentResult?: {
     id: string;
     status: string;
     updateTime: string;
   };
-  itemsPrice: number;
-  taxPrice: number;
-  shippingPrice: number;
-  totalPrice: number;
+  total: number;
+  itemsPrice?: number;
+  taxPrice?: number;
+  shippingPrice?: number;
+  totalPrice?: number;
   isPaid: boolean;
   paidAt?: Date;
   isDelivered: boolean;
   deliveredAt?: Date;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
   trackingNumber?: string;
+  stripeSessionId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,55 +44,61 @@ const OrderSchema: Schema = new Schema(
     user: {
       type: Schema.Types.ObjectId,
       required: true,
-      ref: 'User',
+      ref: "User",
     },
     items: [
       {
         product: {
           type: Schema.Types.ObjectId,
           required: true,
-          ref: 'Product',
+          ref: "Product",
         },
-        name: { type: String, required: true },
+        name: { type: String },
         price: { type: Number, required: true },
         quantity: { type: Number, required: true },
-        image: { type: String, required: true },
+        image: { type: String },
       },
     ],
     shippingAddress: {
-      street: { type: String, required: true },
-      city: { type: String, required: true },
-      state: { type: String, required: true },
-      zipCode: { type: String, required: true },
-      country: { type: String, required: true },
+      street: { type: String },
+      city: { type: String },
+      state: { type: String },
+      zipCode: { type: String },
+      country: { type: String },
     },
     paymentMethod: {
       type: String,
       required: true,
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "paid", "failed"],
+      default: "pending",
     },
     paymentResult: {
       id: String,
       status: String,
       updateTime: String,
     },
-    itemsPrice: {
+    total: {
       type: Number,
       required: true,
+      default: 0.0,
+    },
+    itemsPrice: {
+      type: Number,
       default: 0.0,
     },
     taxPrice: {
       type: Number,
-      required: true,
       default: 0.0,
     },
     shippingPrice: {
       type: Number,
-      required: true,
       default: 0.0,
     },
     totalPrice: {
       type: Number,
-      required: true,
       default: 0.0,
     },
     isPaid: {
@@ -106,16 +115,18 @@ const OrderSchema: Schema = new Schema(
     deliveredAt: Date,
     status: {
       type: String,
-      enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
-      default: 'pending',
+      enum: ["pending", "processing", "shipped", "delivered", "cancelled"],
+      default: "pending",
     },
     trackingNumber: String,
+    stripeSessionId: String,
   },
   {
     timestamps: true,
   }
 );
 
-const Order: Model<IOrder> = mongoose.models.Order || mongoose.model<IOrder>('Order', OrderSchema);
+const Order: Model<IOrder> =
+  mongoose.models.Order || mongoose.model<IOrder>("Order", OrderSchema);
 
 export default Order;
