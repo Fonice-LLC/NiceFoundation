@@ -7,11 +7,13 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface Order {
   _id: string;
-  user: {
+  user?: {
     _id: string;
     name: string;
     email: string;
   };
+  guestEmail?: string;
+  guestName?: string;
   total: number;
   status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
   paymentStatus: "pending" | "paid" | "failed";
@@ -145,10 +147,17 @@ export default function AdminOrdersPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
-                      {order.user.name}
+                      {order.user
+                        ? order.user.name
+                        : order.guestName || "Guest"}
+                      {!order.user && (
+                        <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                          Guest
+                        </span>
+                      )}
                     </div>
                     <div className="text-sm text-gray-500">
-                      {order.user.email}
+                      {order.user ? order.user.email : order.guestEmail}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

@@ -19,8 +19,9 @@ const categories = [
   { name: "Fragrance", href: "/products?category=fragrance" },
   { name: "Tools", href: "/products?category=tools" },
   { name: "Bath & Body", href: "/products?category=bath-body" },
-  { name: "Salon Services", href: "/salon" },
 ];
+
+const salonService = { name: "Salon Services", href: "/salon" };
 
 export default function Header() {
   const { user, isAuthenticated } = useAuth();
@@ -136,26 +137,17 @@ export default function Header() {
                 <UserIcon className="h-6 w-6" />
               </Link>
             )}
-            {isAuthenticated ? (
-              <Link
-                href="/cart"
-                className="text-gray-700 hover:text-pink-600 relative"
-              >
-                <ShoppingCartIcon className="h-6 w-6" />
-                {getCartTotal() > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-pink-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {getCartTotal()}
-                  </span>
-                )}
-              </Link>
-            ) : (
-              <Link
-                href="/login?returnUrl=/cart"
-                className="text-gray-700 hover:text-pink-600 relative"
-              >
-                <ShoppingCartIcon className="h-6 w-6" />
-              </Link>
-            )}
+            <Link
+              href="/cart"
+              className="text-gray-700 hover:text-pink-600 relative"
+            >
+              <ShoppingCartIcon className="h-6 w-6" />
+              {getCartTotal() > 0 && (
+                <span className="absolute -top-2 -right-2 bg-pink-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {getCartTotal()}
+                </span>
+              )}
+            </Link>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden text-gray-700"
@@ -170,7 +162,7 @@ export default function Header() {
         </div>
 
         {/* Navigation - Desktop */}
-        <nav className="hidden md:flex space-x-8 py-4 border-t">
+        <nav className="hidden md:flex items-center space-x-8 py-4 border-t">
           {categories.map((category) => (
             <Link
               key={category.name}
@@ -180,6 +172,13 @@ export default function Header() {
               {category.name}
             </Link>
           ))}
+          {/* Salon Services - Distinct styling, positioned at far right */}
+          <Link
+            href={salonService.href}
+            className="ml-auto px-4 py-2 bg-white text-pink-600 border-2 border-pink-600 rounded-full font-medium hover:bg-pink-600 hover:text-white transition-colors"
+          >
+            {salonService.name}
+          </Link>
         </nav>
       </div>
 
@@ -216,6 +215,14 @@ export default function Header() {
                   {category.name}
                 </Link>
               ))}
+              {/* Salon Services - At the bottom with distinct styling */}
+              <Link
+                href={salonService.href}
+                className="px-4 py-2 bg-white text-pink-600 border-2 border-pink-600 rounded-full font-medium hover:bg-pink-600 hover:text-white transition-colors text-center mt-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {salonService.name}
+              </Link>
             </nav>
           </div>
         </div>

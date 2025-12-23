@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useEffect, Suspense } from 'react';
-import Link from 'next/link';
-import { useSearchParams, usePathname, useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { useCart } from '@/contexts/CartContext';
+import { useState, useEffect, Suspense } from "react";
+import Link from "next/link";
+import { useSearchParams, usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
 
 interface Product {
   _id: string;
@@ -31,22 +31,22 @@ function ProductsList() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
-    category: searchParams.get('category') || '',
-    search: searchParams.get('search') || '',
-    sort: 'newest',
+    category: searchParams.get("category") || "",
+    search: searchParams.get("search") || "",
+    sort: "newest",
   });
 
   const categories = [
-    { value: 'makeup', label: 'Makeup' },
-    { value: 'skincare', label: 'Skincare' },
-    { value: 'haircare', label: 'Haircare' },
-    { value: 'fragrance', label: 'Fragrance' },
-    { value: 'tools', label: 'Tools' },
-    { value: 'bath-body', label: 'Bath & Body' },
-    { value: 'nails', label: 'Nails' },
-    { value: 'mens', label: "Men's" },
-    { value: 'gifts', label: 'Gifts' },
-    { value: 'accessories', label: 'Accessories' },
+    { value: "makeup", label: "Makeup" },
+    { value: "skincare", label: "Skincare" },
+    { value: "haircare", label: "Haircare" },
+    { value: "fragrance", label: "Fragrance" },
+    { value: "tools", label: "Tools" },
+    { value: "bath-body", label: "Bath & Body" },
+    { value: "nails", label: "Nails" },
+    { value: "mens", label: "Men's" },
+    { value: "gifts", label: "Gifts" },
+    { value: "accessories", label: "Accessories" },
   ];
 
   useEffect(() => {
@@ -57,9 +57,9 @@ function ProductsList() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (filters.category) params.append('category', filters.category);
-      if (filters.search) params.append('search', filters.search);
-      params.append('sort', filters.sort);
+      if (filters.category) params.append("category", filters.category);
+      if (filters.search) params.append("search", filters.search);
+      params.append("sort", filters.sort);
 
       const response = await fetch(`/api/products?${params.toString()}`);
       const data = await response.json();
@@ -68,16 +68,16 @@ function ProductsList() {
         setProducts(data.data.products);
       }
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error("Error fetching products:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(price);
   };
 
@@ -85,13 +85,7 @@ function ProductsList() {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!authUser) {
-      const returnUrl = `${pathname}?${searchParams.toString()}`;
-      localStorage.setItem('pendingCartProduct', productId);
-      router.push(`/login?returnUrl=${encodeURIComponent(returnUrl)}`);
-      return;
-    }
-
+    // Add to cart for both guest and authenticated users
     addToCart(productId);
   };
 
@@ -119,8 +113,10 @@ function ProductsList() {
                     type="radio"
                     name="category"
                     value=""
-                    checked={filters.category === ''}
-                    onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+                    checked={filters.category === ""}
+                    onChange={(e) =>
+                      setFilters({ ...filters, category: e.target.value })
+                    }
                     className="mr-2"
                   />
                   All Categories
@@ -132,7 +128,9 @@ function ProductsList() {
                       name="category"
                       value={cat.value}
                       checked={filters.category === cat.value}
-                      onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+                      onChange={(e) =>
+                        setFilters({ ...filters, category: e.target.value })
+                      }
                       className="mr-2"
                     />
                     {cat.label}
@@ -146,7 +144,9 @@ function ProductsList() {
               <h3 className="font-semibold mb-3">Sort By</h3>
               <select
                 value={filters.sort}
-                onChange={(e) => setFilters({ ...filters, sort: e.target.value })}
+                onChange={(e) =>
+                  setFilters({ ...filters, sort: e.target.value })
+                }
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pink-500"
               >
                 <option value="newest">Newest</option>
@@ -165,17 +165,20 @@ function ProductsList() {
             <h1 className="text-3xl font-bold mb-2">
               {filters.category
                 ? categories.find((c) => c.value === filters.category)?.label
-                : 'All Products'}
+                : "All Products"}
             </h1>
             <p className="text-gray-600">
-              {loading ? 'Loading...' : `${products.length} products found`}
+              {loading ? "Loading..." : `${products.length} products found`}
             </p>
           </div>
 
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-gray-200 rounded-lg h-96 animate-pulse"></div>
+                <div
+                  key={i}
+                  className="bg-gray-200 rounded-lg h-96 animate-pulse"
+                ></div>
               ))}
             </div>
           ) : products.length === 0 ? (
@@ -189,10 +192,7 @@ function ProductsList() {
                   key={product._id}
                   className="bg-white rounded-lg shadow hover:shadow-xl transition-shadow overflow-hidden group relative"
                 >
-                  <Link
-                    href={`/products/${product._id}`}
-                    className="block"
-                  >
+                  <Link href={`/products/${product._id}`} className="block">
                     <div className="aspect-square bg-gray-100 relative overflow-hidden">
                       {product.images && product.images.length > 0 ? (
                         <img
@@ -212,8 +212,12 @@ function ProductsList() {
                       )}
                     </div>
                     <div className="p-4">
-                      <p className="text-sm text-gray-500 mb-1">{product.brand}</p>
-                      <h3 className="font-semibold mb-2 line-clamp-2">{product.name}</h3>
+                      <p className="text-sm text-gray-500 mb-1">
+                        {product.brand}
+                      </p>
+                      <h3 className="font-semibold mb-2 line-clamp-2">
+                        {product.name}
+                      </h3>
                       <div className="flex items-center gap-2 mb-2">
                         <div className="flex items-center">
                           {[...Array(5)].map((_, i) => (
@@ -221,8 +225,8 @@ function ProductsList() {
                               key={i}
                               className={`w-4 h-4 ${
                                 i < Math.floor(product.ratings.average)
-                                  ? 'text-yellow-400'
-                                  : 'text-gray-300'
+                                  ? "text-yellow-400"
+                                  : "text-gray-300"
                               }`}
                               fill="currentColor"
                               viewBox="0 0 20 20"
@@ -252,7 +256,9 @@ function ProductsList() {
                         )}
                       </div>
                       {!product.inStock && (
-                        <p className="text-red-500 text-sm mt-2">Out of Stock</p>
+                        <p className="text-red-500 text-sm mt-2">
+                          Out of Stock
+                        </p>
                       )}
                     </div>
                   </Link>
@@ -302,18 +308,20 @@ function ProductsList() {
 
 export default function ProductsPage() {
   return (
-    <Suspense fallback={
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-gray-200 rounded-lg h-96"></div>
-            ))}
+    <Suspense
+      fallback={
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="bg-gray-200 rounded-lg h-96"></div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <ProductsList />
     </Suspense>
   );

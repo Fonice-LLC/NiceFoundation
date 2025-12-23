@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { TrashIcon } from "@heroicons/react/24/outline";
@@ -24,20 +23,27 @@ interface CartDisplayItem {
 }
 
 export default function CartPage() {
-  const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const { cart, removeFromCart } = useCart();
   const [cartItems, setCartItems] = useState<CartDisplayItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestName, setGuestName] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/login?returnUrl=/cart");
-    }
-  }, [user, authLoading, router]);
+  // Shipping address fields
+  const [shippingAddress, setShippingAddress] = useState({
+    fullName: "",
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "United States",
+    phone: "",
+  });
 
   useEffect(() => {
     setIsClient(true);
@@ -110,11 +116,70 @@ export default function CartPage() {
   };
 
   const handleCheckout = async () => {
+    // Validate guest checkout fields
+    if (!user) {
+      if (!guestEmail) {
+        alert("Please enter your email address");
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
+        alert("Please enter a valid email address");
+        return;
+      }
+      if (!guestName) {
+        alert("Please enter your name");
+        return;
+      }
+      if (!shippingAddress.fullName) {
+        alert("Please enter the recipient's full name");
+        return;
+      }
+      if (!shippingAddress.addressLine1) {
+        alert("Please enter your street address");
+        return;
+      }
+      if (!shippingAddress.city) {
+        alert("Please enter your city");
+        return;
+      }
+      if (!shippingAddress.state) {
+        alert("Please enter your state");
+        return;
+      }
+      if (!shippingAddress.zipCode) {
+        alert("Please enter your ZIP code");
+        return;
+      }
+      if (!shippingAddress.phone) {
+        alert("Please enter your phone number");
+        return;
+      }
+    }
+
     setCheckoutLoading(true);
     try {
+      // Prepare checkout data
+      const checkoutData: any = {
+        items: cart.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+        })),
+        email: user ? user.email : guestEmail,
+        name: user ? user.name : guestName || undefined,
+      };
+
+      // Add shipping address for guest users
+      if (!user) {
+        checkoutData.shippingAddress = shippingAddress;
+      }
+
       const response = await fetch("/api/checkout", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         credentials: "include",
+        body: JSON.stringify(checkoutData),
       });
 
       const data = await response.json();
@@ -132,16 +197,6 @@ export default function CartPage() {
       setCheckoutLoading(false);
     }
   };
-
-  if (authLoading || !user) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center">
-          <p className="text-xl text-gray-600">Loading cart...</p>
-        </div>
-      </div>
-    );
-  }
 
   if (loading && cart.length > 0) {
     return (
@@ -267,6 +322,208 @@ export default function CartPage() {
         <div className="lg:col-span-1">
           <div className="bg-white rounded-lg shadow p-6 sticky top-8">
             <h2 className="text-xl font-bold mb-6">Order Summary</h2>
+
+            {/* Guest Checkout Form */}
+            {!user && (
+              <div className="mb-6 space-y-4 border-b pb-6">
+                <h3 className="font-semibold text-gray-900">
+                  Contact Information
+                </h3>
+                <div>
+                  <label
+                    htmlFor="guestEmail"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    id="guestEmail"
+                    value={guestEmail}
+                    onChange={(e) => setGuestEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="guestName"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Your Name *
+                  </label>
+                  <input
+                    type="text"
+                    id="guestName"
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    placeholder="John Doe"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    required
+                  />
+                </div>
+
+                <h3 className="font-semibold text-gray-900 pt-4">
+                  Shipping Address
+                </h3>
+                <div>
+                  <label
+                    htmlFor="fullName"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Recipient Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    id="fullName"
+                    value={shippingAddress.fullName}
+                    onChange={(e) =>
+                      setShippingAddress({
+                        ...shippingAddress,
+                        fullName: e.target.value,
+                      })
+                    }
+                    placeholder="John Doe"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="addressLine1"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Street Address *
+                  </label>
+                  <input
+                    type="text"
+                    id="addressLine1"
+                    value={shippingAddress.addressLine1}
+                    onChange={(e) =>
+                      setShippingAddress({
+                        ...shippingAddress,
+                        addressLine1: e.target.value,
+                      })
+                    }
+                    placeholder="123 Main St"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="addressLine2"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Apartment, suite, etc. (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    id="addressLine2"
+                    value={shippingAddress.addressLine2}
+                    onChange={(e) =>
+                      setShippingAddress({
+                        ...shippingAddress,
+                        addressLine2: e.target.value,
+                      })
+                    }
+                    placeholder="Apt 4B"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label
+                      htmlFor="city"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      City *
+                    </label>
+                    <input
+                      type="text"
+                      id="city"
+                      value={shippingAddress.city}
+                      onChange={(e) =>
+                        setShippingAddress({
+                          ...shippingAddress,
+                          city: e.target.value,
+                        })
+                      }
+                      placeholder="New York"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="state"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      State *
+                    </label>
+                    <input
+                      type="text"
+                      id="state"
+                      value={shippingAddress.state}
+                      onChange={(e) =>
+                        setShippingAddress({
+                          ...shippingAddress,
+                          state: e.target.value,
+                        })
+                      }
+                      placeholder="NY"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label
+                    htmlFor="zipCode"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    ZIP Code *
+                  </label>
+                  <input
+                    type="text"
+                    id="zipCode"
+                    value={shippingAddress.zipCode}
+                    onChange={(e) =>
+                      setShippingAddress({
+                        ...shippingAddress,
+                        zipCode: e.target.value,
+                      })
+                    }
+                    placeholder="10001"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="phone"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Phone Number *
+                  </label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    value={shippingAddress.phone}
+                    onChange={(e) =>
+                      setShippingAddress({
+                        ...shippingAddress,
+                        phone: e.target.value,
+                      })
+                    }
+                    placeholder="(555) 123-4567"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    required
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="space-y-4 mb-6">
               <div className="flex justify-between text-gray-600">

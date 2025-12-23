@@ -11,6 +11,8 @@ import {
   ChartBarIcon,
   PlusIcon,
   CogIcon,
+  CalendarIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 
 interface DashboardStats {
@@ -122,6 +124,18 @@ export default function AdminDashboard() {
       href: "/admin/orders",
       icon: ShoppingBagIcon,
       description: "Track and manage orders",
+    },
+    {
+      name: "Salon Bookings",
+      href: "/admin/bookings",
+      icon: CalendarIcon,
+      description: "Manage salon service bookings",
+    },
+    {
+      name: "Salon Services",
+      href: "/admin/services",
+      icon: SparklesIcon,
+      description: "Manage salon services",
     },
   ];
 

@@ -42,11 +42,14 @@ export default function EditProductPage() {
 
   const fetchProduct = async () => {
     try {
+      console.log("Fetching product:", productId);
       const response = await fetch(`/api/admin/products/${productId}`, {
         credentials: "include",
       });
 
+      console.log("Response status:", response.status);
       const data = await response.json();
+      console.log("Response data:", data);
 
       if (response.ok && data.success) {
         const product = data.data;
@@ -65,6 +68,7 @@ export default function EditProductPage() {
           featured: product.featured || false,
         });
       } else {
+        console.error("Failed to fetch product:", data);
         alert(data.error || "Failed to fetch product");
         router.push("/admin/products");
       }

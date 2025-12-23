@@ -24,6 +24,7 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Redirect if not admin
   useEffect(() => {
@@ -41,14 +42,36 @@ export default function AdminProductsPage() {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch("/api/products");
+      setError(null);
+      const response = await fetch("/api/products?limit=1000"); // Get all products for admin
       const data = await response.json();
 
+      console.log("API Response:", data);
+      console.log("Response OK:", response.ok);
+      console.log("Data structure:", {
+        success: data.success,
+        hasData: !!data.data,
+        dataKeys: data.data ? Object.keys(data.data) : [],
+        products: data.data?.products,
+        productsLength: data.data?.products?.length,
+      });
+
       if (response.ok && data.success) {
-        setProducts(data.data);
+        // API returns { success: true, data: { products: [...], pagination: {...} } }
+        const productsList = data.data?.products || [];
+        console.log("Setting products:", productsList);
+        setProducts(Array.isArray(productsList) ? productsList : []);
+      } else {
+        const errorMsg = data.error || "Failed to fetch products";
+        console.error("Failed to fetch products:", errorMsg);
+        setError(errorMsg);
+        setProducts([]);
       }
-    } catch (error) {
+    } catch (error: any) {
+      const errorMsg = error.message || "Error fetching products";
       console.error("Error fetching products:", error);
+      setError(errorMsg);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -115,6 +138,20 @@ export default function AdminProductsPage() {
           </Link>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+            <p className="font-semibold">Error loading products:</p>
+            <p>{error}</p>
+            <button
+              onClick={fetchProducts}
+              className="mt-2 text-sm underline hover:no-underline"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
         {/* Products Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200">
@@ -138,87 +175,88 @@ export default function AdminProductsPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {products.map((product) => (
-                <tr key={product._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="h-12 w-12 flex-shrink-0 relative">
-                        <Image
-                          src={product.images[0] || "/placeholder.png"}
-                          alt={product.name}
-                          fill
-                          className="rounded object-cover"
-                        />
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
-                          {product.name}
+              {Array.isArray(products) &&
+                products.map((product) => (
+                  <tr key={product._id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="h-12 w-12 flex-shrink-0 relative">
+                          <Image
+                            src={product.images[0] || "/placeholder.png"}
+                            alt={product.name}
+                            fill
+                            className="rounded object-cover"
+                          />
                         </div>
-                        <div className="text-sm text-gray-500">
-                          {product.brand}
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {product.name}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {product.brand}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-pink-100 text-pink-800">
-                      {product.category}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {product.salePrice ? (
-                        <>
-                          <span className="line-through text-gray-500">
-                            ${product.price}
-                          </span>
-                          <span className="ml-2 text-pink-600 font-semibold">
-                            ${product.salePrice}
-                          </span>
-                        </>
-                      ) : (
-                        <span>${product.price}</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`text-sm ${
-                        product.stock > 10
-                          ? "text-green-600"
-                          : product.stock > 0
-                          ? "text-yellow-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {product.stock}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <Link
-                      href={`/admin/products/${product._id}`}
-                      className="text-pink-600 hover:text-pink-900 mr-4"
-                    >
-                      <PencilIcon className="h-5 w-5 inline" />
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(product._id)}
-                      disabled={deleteLoading === product._id}
-                      className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                    >
-                      {deleteLoading === product._id ? (
-                        <div className="animate-spin h-5 w-5 border-2 border-red-600 border-t-transparent rounded-full inline-block"></div>
-                      ) : (
-                        <TrashIcon className="h-5 w-5 inline" />
-                      )}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-pink-100 text-pink-800">
+                        {product.category}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {product.salePrice ? (
+                          <>
+                            <span className="line-through text-gray-500">
+                              ${product.price}
+                            </span>
+                            <span className="ml-2 text-pink-600 font-semibold">
+                              ${product.salePrice}
+                            </span>
+                          </>
+                        ) : (
+                          <span>${product.price}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`text-sm ${
+                          product.stock > 10
+                            ? "text-green-600"
+                            : product.stock > 0
+                            ? "text-yellow-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {product.stock}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <Link
+                        href={`/admin/products/${product._id}`}
+                        className="text-pink-600 hover:text-pink-900 mr-4"
+                      >
+                        <PencilIcon className="h-5 w-5 inline" />
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(product._id)}
+                        disabled={deleteLoading === product._id}
+                        className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                      >
+                        {deleteLoading === product._id ? (
+                          <div className="animate-spin h-5 w-5 border-2 border-red-600 border-t-transparent rounded-full inline-block"></div>
+                        ) : (
+                          <TrashIcon className="h-5 w-5 inline" />
+                        )}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
 
-          {products.length === 0 && (
+          {(!Array.isArray(products) || products.length === 0) && !loading && (
             <div className="text-center py-12">
               <p className="text-gray-500">No products found</p>
             </div>

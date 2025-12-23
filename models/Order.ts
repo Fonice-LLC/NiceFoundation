@@ -1,7 +1,10 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface IOrder extends Document {
-  user: mongoose.Types.ObjectId;
+  user?: mongoose.Types.ObjectId;
+  guestEmail?: string;
+  guestName?: string;
+  guestPhone?: string;
   items: Array<{
     product: mongoose.Types.ObjectId;
     name?: string;
@@ -10,11 +13,14 @@ export interface IOrder extends Document {
     image?: string;
   }>;
   shippingAddress?: {
-    street: string;
+    fullName: string;
+    addressLine1: string;
+    addressLine2?: string;
     city: string;
     state: string;
     zipCode: string;
     country: string;
+    phone: string;
   };
   paymentMethod: string;
   paymentStatus: "pending" | "paid" | "failed";
@@ -43,8 +49,20 @@ const OrderSchema: Schema = new Schema(
   {
     user: {
       type: Schema.Types.ObjectId,
-      required: true,
+      required: false,
       ref: "User",
+    },
+    guestEmail: {
+      type: String,
+      required: false,
+    },
+    guestName: {
+      type: String,
+      required: false,
+    },
+    guestPhone: {
+      type: String,
+      required: false,
     },
     items: [
       {
@@ -60,11 +78,14 @@ const OrderSchema: Schema = new Schema(
       },
     ],
     shippingAddress: {
-      street: { type: String },
+      fullName: { type: String },
+      addressLine1: { type: String },
+      addressLine2: { type: String },
       city: { type: String },
       state: { type: String },
       zipCode: { type: String },
       country: { type: String },
+      phone: { type: String },
     },
     paymentMethod: {
       type: String,

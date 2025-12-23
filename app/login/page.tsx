@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -12,10 +12,10 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const returnUrl = searchParams.get('returnUrl') || '/profile';
+  const returnUrl = searchParams.get("returnUrl") || "/profile";
   const { setAuthData } = useAuth();
   const { addToCart } = useCart();
   const [formData, setFormData] = useState({
@@ -52,10 +52,10 @@ export default function LoginPage() {
       }
 
       // Check if there's a pending product to add to cart
-      const pendingProduct = localStorage.getItem('pendingCartProduct');
+      const pendingProduct = localStorage.getItem("pendingCartProduct");
       if (pendingProduct) {
         addToCart(pendingProduct);
-        localStorage.removeItem('pendingCartProduct');
+        localStorage.removeItem("pendingCartProduct");
       }
 
       // Redirect to the return URL or profile page
@@ -196,5 +196,19 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+          Loading...
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

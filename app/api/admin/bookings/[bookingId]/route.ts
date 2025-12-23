@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import Product from "@/models/Product";
+import SalonBooking from "@/models/SalonBooking";
 import { getCurrentUser } from "@/lib/auth";
 
-// DELETE /api/admin/products/[productId] - Delete a product
+// DELETE /api/admin/bookings/[bookingId] - Delete a booking
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ productId: string }> }
+  { params }: { params: Promise<{ bookingId: string }> }
 ) {
   try {
     await connectDB();
@@ -23,16 +23,16 @@ export async function DELETE(
       );
     }
 
-    const { productId } = await params;
+    const { bookingId } = await params;
 
-    // Delete the product
-    const deletedProduct = await Product.findByIdAndDelete(productId);
+    // Delete the booking
+    const deletedBooking = await SalonBooking.findByIdAndDelete(bookingId);
 
-    if (!deletedProduct) {
+    if (!deletedBooking) {
       return NextResponse.json(
         {
           success: false,
-          error: "Product not found",
+          error: "Booking not found",
         },
         { status: 404 }
       );
@@ -40,24 +40,24 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: "Product deleted successfully",
+      message: "Booking deleted successfully",
     });
   } catch (error: any) {
-    console.error("Delete product error:", error);
+    console.error("Delete booking error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Failed to delete product",
+        error: error.message || "Failed to delete booking",
       },
       { status: 500 }
     );
   }
 }
 
-// PATCH /api/admin/products/[productId] - Update a product
+// PATCH /api/admin/bookings/[bookingId] - Update a booking
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ productId: string }> }
+  { params }: { params: Promise<{ bookingId: string }> }
 ) {
   try {
     await connectDB();
@@ -74,21 +74,21 @@ export async function PATCH(
       );
     }
 
-    const { productId } = await params;
+    const { bookingId } = await params;
     const body = await request.json();
 
-    // Update the product
-    const updatedProduct = await Product.findByIdAndUpdate(
-      productId,
+    // Update the booking
+    const updatedBooking = await SalonBooking.findByIdAndUpdate(
+      bookingId,
       { $set: body },
       { new: true, runValidators: true }
-    );
+    ).populate("service", "name category duration price");
 
-    if (!updatedProduct) {
+    if (!updatedBooking) {
       return NextResponse.json(
         {
           success: false,
-          error: "Product not found",
+          error: "Booking not found",
         },
         { status: 404 }
       );
@@ -96,25 +96,25 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      data: updatedProduct,
-      message: "Product updated successfully",
+      data: updatedBooking,
+      message: "Booking updated successfully",
     });
   } catch (error: any) {
-    console.error("Update product error:", error);
+    console.error("Update booking error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Failed to update product",
+        error: error.message || "Failed to update booking",
       },
       { status: 500 }
     );
   }
 }
 
-// GET /api/admin/products/[productId] - Get a single product
+// GET /api/admin/bookings/[bookingId] - Get a single booking
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ productId: string }> }
+  { params }: { params: Promise<{ bookingId: string }> }
 ) {
   try {
     await connectDB();
@@ -131,15 +131,17 @@ export async function GET(
       );
     }
 
-    const { productId } = await params;
+    const { bookingId } = await params;
 
-    const product = await Product.findById(productId);
+    const booking = await SalonBooking.findById(bookingId)
+      .populate("service", "name category duration price")
+      .populate("user", "name email");
 
-    if (!product) {
+    if (!booking) {
       return NextResponse.json(
         {
           success: false,
-          error: "Product not found",
+          error: "Booking not found",
         },
         { status: 404 }
       );
@@ -147,16 +149,17 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      data: product,
+      data: booking,
     });
   } catch (error: any) {
-    console.error("Get product error:", error);
+    console.error("Get booking error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Failed to fetch product",
+        error: error.message || "Failed to fetch booking",
       },
       { status: 500 }
     );
   }
 }
+

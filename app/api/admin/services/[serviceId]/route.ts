@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import Product from "@/models/Product";
+import SalonService from "@/models/SalonService";
 import { getCurrentUser } from "@/lib/auth";
 
-// DELETE /api/admin/products/[productId] - Delete a product
+// DELETE /api/admin/services/[serviceId] - Delete a service
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ productId: string }> }
+  { params }: { params: Promise<{ serviceId: string }> }
 ) {
   try {
     await connectDB();
@@ -23,16 +23,16 @@ export async function DELETE(
       );
     }
 
-    const { productId } = await params;
+    const { serviceId } = await params;
 
-    // Delete the product
-    const deletedProduct = await Product.findByIdAndDelete(productId);
+    // Delete the service
+    const deletedService = await SalonService.findByIdAndDelete(serviceId);
 
-    if (!deletedProduct) {
+    if (!deletedService) {
       return NextResponse.json(
         {
           success: false,
-          error: "Product not found",
+          error: "Service not found",
         },
         { status: 404 }
       );
@@ -40,24 +40,24 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: "Product deleted successfully",
+      message: "Service deleted successfully",
     });
   } catch (error: any) {
-    console.error("Delete product error:", error);
+    console.error("Delete service error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Failed to delete product",
+        error: error.message || "Failed to delete service",
       },
       { status: 500 }
     );
   }
 }
 
-// PATCH /api/admin/products/[productId] - Update a product
+// PATCH /api/admin/services/[serviceId] - Update a service
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ productId: string }> }
+  { params }: { params: Promise<{ serviceId: string }> }
 ) {
   try {
     await connectDB();
@@ -74,21 +74,21 @@ export async function PATCH(
       );
     }
 
-    const { productId } = await params;
+    const { serviceId } = await params;
     const body = await request.json();
 
-    // Update the product
-    const updatedProduct = await Product.findByIdAndUpdate(
-      productId,
+    // Update the service
+    const updatedService = await SalonService.findByIdAndUpdate(
+      serviceId,
       { $set: body },
       { new: true, runValidators: true }
     );
 
-    if (!updatedProduct) {
+    if (!updatedService) {
       return NextResponse.json(
         {
           success: false,
-          error: "Product not found",
+          error: "Service not found",
         },
         { status: 404 }
       );
@@ -96,25 +96,25 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      data: updatedProduct,
-      message: "Product updated successfully",
+      data: updatedService,
+      message: "Service updated successfully",
     });
   } catch (error: any) {
-    console.error("Update product error:", error);
+    console.error("Update service error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Failed to update product",
+        error: error.message || "Failed to update service",
       },
       { status: 500 }
     );
   }
 }
 
-// GET /api/admin/products/[productId] - Get a single product
+// GET /api/admin/services/[serviceId] - Get a single service
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ productId: string }> }
+  { params }: { params: Promise<{ serviceId: string }> }
 ) {
   try {
     await connectDB();
@@ -131,15 +131,15 @@ export async function GET(
       );
     }
 
-    const { productId } = await params;
+    const { serviceId } = await params;
 
-    const product = await Product.findById(productId);
+    const service = await SalonService.findById(serviceId);
 
-    if (!product) {
+    if (!service) {
       return NextResponse.json(
         {
           success: false,
-          error: "Product not found",
+          error: "Service not found",
         },
         { status: 404 }
       );
@@ -147,16 +147,17 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      data: product,
+      data: service,
     });
   } catch (error: any) {
-    console.error("Get product error:", error);
+    console.error("Get service error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Failed to fetch product",
+        error: error.message || "Failed to fetch service",
       },
       { status: 500 }
     );
   }
 }
+
