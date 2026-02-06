@@ -4,9 +4,20 @@ import connectDB from "@/lib/mongodb";
 import Product from "@/models/Product";
 import { getCurrentUser } from "@/lib/auth";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-11-17.clover",
-});
+// Lazy initialization to avoid build-time errors
+let stripe: Stripe | null = null;
+
+function getStripe() {
+  if (!stripe) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error("STRIPE_SECRET_KEY is not configured");
+    }
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: "2025-11-17.clover",
+    });
+  }
+  return stripe;
+}
 
 // POST /api/checkout - Create Stripe checkout session
 export async function POST(request: NextRequest) {
@@ -24,7 +35,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "Cart is empty",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -35,7 +46,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "Email is required",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -78,7 +89,7 @@ export async function POST(request: NextRequest) {
         items.map((item: any) => ({
           productId: item.productId,
           quantity: item.quantity,
-        }))
+        })),
       ),
       guestEmail: email,
     };
@@ -96,7 +107,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: lineItems,
       mode: "payment",
@@ -120,7 +131,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: error.message || "Failed to create checkout session",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

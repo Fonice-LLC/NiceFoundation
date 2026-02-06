@@ -8,9 +8,20 @@ import User from "@/models/User";
 import { getCurrentUser } from "@/lib/auth";
 import { sendOrderConfirmationEmail } from "@/lib/email";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-11-17.clover",
-});
+// Lazy initialization to avoid build-time errors
+let stripe: Stripe | null = null;
+
+function getStripe() {
+  if (!stripe) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error("STRIPE_SECRET_KEY is not configured");
+    }
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: "2025-11-17.clover",
+    });
+  }
+  return stripe;
+}
 
 // GET /api/checkout/verify - Verify Stripe checkout session and create order
 export async function GET(request: NextRequest) {
@@ -26,12 +37,12 @@ export async function GET(request: NextRequest) {
           success: false,
           error: "Session ID is required",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Retrieve the session from Stripe
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const session = await getStripe().checkout.sessions.retrieve(sessionId);
 
     if (session.payment_status !== "paid") {
       return NextResponse.json(
@@ -39,7 +50,7 @@ export async function GET(request: NextRequest) {
           success: false,
           error: "Payment not completed",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -61,7 +72,7 @@ export async function GET(request: NextRequest) {
           success: false,
           error: "Cart data not found in session",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -72,7 +83,7 @@ export async function GET(request: NextRequest) {
           success: false,
           error: "Cart is empty",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -100,7 +111,7 @@ export async function GET(request: NextRequest) {
     // Calculate total
     const total = orderItems.reduce(
       (sum: number, item: any) => sum + item.price * item.quantity,
-      0
+      0,
     );
 
     // Get authenticated user (optional)
@@ -144,7 +155,7 @@ export async function GET(request: NextRequest) {
       await Cart.findOneAndUpdate(
         { user: currentUser.userId },
         { items: [] },
-        { new: true }
+        { new: true },
       );
     }
 
@@ -217,7 +228,7 @@ export async function GET(request: NextRequest) {
         success: false,
         error: error.message || "Failed to verify checkout",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
